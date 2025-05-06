@@ -1,0 +1,40 @@
+{
+  "name": "trade-secret",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@fal-ai/client": "^1.4.0",
+    "@headlessui/react": "^1.7.17",
+    "@heroicons/react": "^2.0.18",
+    "@supabase/ssr": "^0.6.1",
+    "@supabase/supabase-js": "^2.39.5",
+    "browser-image-compression": "^2.0.2",
+    "clsx": "^2.1.0",
+    "fabric": "^6.6.4",
+    "framer-motion": "^10.16.4",
+    "next": "14.2.3",
+    "razorpay": "^2.9.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-dropzone": "^14.3.8",
+    "react-icons": "^5.5.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.5",
+    "@types/node": "20.11.30",
+    "@types/react": "18.2.62",
+    "@types/react-dom": "18.2.18",
+    "autoprefixer": "10.4.17",
+    "postcss": "8.4.35",
+    "tailwind-merge": "^1.14.0",
+    "tailwindcss": "4.1.5",
+    "typescript": "5.4.5"
+  }
+}
