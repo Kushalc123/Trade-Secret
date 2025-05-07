@@ -1,16 +1,15 @@
 /*  src/components/Canvas/CanvasEditor.tsx
     ────────────────────────────────────────────────────────────────
-    “Working-for-sure” version – 7 May 2025
+    Working Canvas Editor – 7 May 2025
     • Brush / Erase / Undo / Redo / Clear
     • Brush-size slider (8-100 px)
     • Invisible hit-area <Rect> so the first click always registers
     • Green cursor preview
-    • All TypeScript return-type issues resolved
+    • Download Mask (black/white PNG)
 ──────────────────────────────────────────────────────────────────*/
 
 'use client';
 
-//import { useRef, useState, useEffect } from 'react';
 import { useRef, useState, useEffect } from 'react';
 import { buildMaskPNG } from '@/utils/buildMask';
 import {
@@ -26,15 +25,15 @@ import { useMaskStore, Stroke } from '@/store/useMaskStore';
 
 interface CanvasEditorProps {
   imgSrc: string;        // URL | data-URL | blob-URL
-  maxScale?: number;     // keep at most this scaling factor (default 0.9)
+  maxScale?: number;     // optional scaling factor (default 0.9)
 }
 
 export default function CanvasEditor({ imgSrc, maxScale = 0.9 }: CanvasEditorProps) {
-  /* ─────────────  base image  ───────────── */
+  /* ─────────────── base image ─────────────── */
   const [image] = useImage(imgSrc, 'anonymous');
   const stageRef = useRef<any>(null);
 
-  /* ─────────────  global store  ───────────── */
+  /* ─────────────── global store ─────────────── */
   const {
     strokes,
     tool,
@@ -47,7 +46,7 @@ export default function CanvasEditor({ imgSrc, maxScale = 0.9 }: CanvasEditorPro
     clear,
   } = useMaskStore();
 
-  /* ─────────────  live stroke helpers  ───────────── */
+  /* ─────────────── live stroke state ─────────────── */
   const [isDrawing, setIsDrawing] = useState(false);
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
 
@@ -58,17 +57,17 @@ export default function CanvasEditor({ imgSrc, maxScale = 0.9 }: CanvasEditorPro
 
   const extendStroke = (x: number, y: number) => {
     useMaskStore.setState((state) => {
-      if (state.strokes.length === 0) return state;            // <- always return something
+      if (state.strokes.length === 0) return state;
       const updated: Stroke[] = [...state.strokes];
       const last = updated[updated.length - 1];
       updated[updated.length - 1] = { ...last, points: [...last.points, x, y] };
-      return { ...state, strokes: updated };                   // TS-safe
+      return { ...state, strokes: updated };
     });
   };
 
   const stopStroke = () => setIsDrawing(false);
 
-  /* ─────────────  image fit  ───────────── */
+  /* ─────────────── image fit ─────────────── */
   const [dims, setDims] = useState({ w: 600, h: 400 });
   useEffect(() => {
     if (!image) return;
@@ -78,7 +77,7 @@ export default function CanvasEditor({ imgSrc, maxScale = 0.9 }: CanvasEditorPro
     setDims({ w: image.width * scale, h: image.height * scale });
   }, [image, maxScale]);
 
-  /* ─────────────  reusable button  ───────────── */
+  /* ─────────────── reusable button ─────────────── */
   const Btn = ({
     label,
     active,
@@ -98,7 +97,7 @@ export default function CanvasEditor({ imgSrc, maxScale = 0.9 }: CanvasEditorPro
     </button>
   );
 
-  /* ─────────────  render  ───────────── */
+  /* ─────────────── render ─────────────── */
   return (
     <div className="flex flex-col items-center gap-4">
       {/* toolbar */}
@@ -108,19 +107,19 @@ export default function CanvasEditor({ imgSrc, maxScale = 0.9 }: CanvasEditorPro
         <Btn label="Undo" onClick={undo} />
         <Btn label="Redo" onClick={redo} />
         <Btn label="Clear" onClick={clear} />
-{/* Download mask */}
-    <Btn
-      label="Download Mask"
-      onClick={async () => {
-        const blob = await buildMaskPNG(strokes, dims.w, dims.h);
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'mask.png';
-        a.click();
-        URL.revokeObjectURL(url);
-      }}
-    />
+        {/* Download Mask */}
+        <Btn
+          label="Download Mask"
+          onClick={async () => {
+            const blob = await buildMaskPNG(strokes, dims.w, dims.h);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'mask.png';
+            a.click();
+            URL.revokeObjectURL(url);
+          }}
+        />
         <span className="ml-4 text-sm">Size</span>
         <input
           type="range"
@@ -161,7 +160,7 @@ export default function CanvasEditor({ imgSrc, maxScale = 0.9 }: CanvasEditorPro
 
           {/* overlay */}
           <Layer>
-            {/* hit-area so first click always fires */}
+            {/* invisible hit-area */}
             <Rect
               width={dims.w}
               height={dims.h}
