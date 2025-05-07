@@ -1,30 +1,29 @@
 /* ------------------------------------------------------------------
-   FabricCanvas – plain drawing layer (no image)                  v1
+   src/components/FabricCanvas.tsx
 -------------------------------------------------------------------*/
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { FabricCanvas } from "fabric";
-import { fabric } from "fabric";
+import type { FabricCanvas } from "fabric/fabric-impl";
+import * as fabric from "fabric";          // ☑ default export provides Canvas
 
 interface Props {
   width:  number;
   height: number;
-  className?: string;
-  maskColor?: string;   // any CSS color – default = 50 % green
-  brushSize?: number;   // px
+  className?:  string;
+  maskColor?:  string;
+  brushSize?:  number;
 }
 
 export default function FabricCanvas({
   width,
   height,
-  className    = "",
-  maskColor    = "rgba(0,255,0,0.5)",
-  brushSize    = 40,
+  className = "",
+  maskColor = "rgba(0,255,0,0.5)",
+  brushSize = 40,
 }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
 
-  /* build once on mount */
   useEffect(() => {
     if (!ref.current) return;
     const canvas: FabricCanvas = new fabric.Canvas(ref.current, {
@@ -33,7 +32,6 @@ export default function FabricCanvas({
       selection: false,
     });
 
-    /* custom brush */
     const brush = new fabric.PencilBrush(canvas);
     brush.color  = maskColor;
     brush.width  = brushSize;
@@ -48,7 +46,7 @@ export default function FabricCanvas({
       ref={ref}
       width={width}
       height={height}
-      className={className}
+      className={`outline outline-1 outline-gray-700 shadow-lg ${className}`}
     />
   );
 }
