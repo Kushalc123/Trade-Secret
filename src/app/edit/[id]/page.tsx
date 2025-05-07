@@ -1,93 +1,140 @@
 /* ------------------------------------------------------------------
-   src/app/edit/[id]/page.tsx  –  very-small demo editor (fixed)
+   src/app/edit/[id]/page.tsx   – live canvas editor
 -------------------------------------------------------------------*/
-'use client';
+"use client";
 
-import {
-  notFound,
-  useRouter,
-  useParams,          // ⬅️ grab route params here
-} from 'next/navigation';
-import { useEffect, useState } from 'react';
-import dynamic from 'next/dynamic';
-import { supabaseBrowser } from '@/lib/supabaseClient';
+import { useEffect, useState } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { supabaseBrowser } from "@/lib/supabaseClient";
+import dynamic from "next/dynamic";
 
-/* lazy-load the Fabric wrapper only on the client */
-const FabricCanvas = dynamic(
-  () => import('@/components/FabricCanvas').then((m) => m.default),
-  { ssr: false, loading: () => <p className="text-gray-400">loading…</p> }
-);
+/* load FabricCanvas only in the browser */
+const FabricCanvas = dynamic(() => import("@/components/FabricCanvas"), {
+  ssr: false,
+});
 
-export default function Edit() {
+type Workflow = "edit" | "edit_model" | "edit_model_pose" | "studio_retouch";
+
+export default function EditPage() {
   /* ----------------------------------------------------------------
-     1) routing helpers
+     0. router helpers + supabase
   ---------------------------------------------------------------- */
-  const router          = useRouter();
-  const { id }          = useParams<{ id: string }>(); // ✅
-  const supabase        = supabaseBrowser();
+  const router       = useRouter();
+  const { id }       = useParams<{ id: string }>();
+  const supabase     = supabaseBrowser();
 
   /* ----------------------------------------------------------------
-     2) state
+     1. local state
   ---------------------------------------------------------------- */
-  const [url, setUrl]   = useState<string>();
-  const [size, setSize] = useState<{ w: number; h: number }>();
+  const [imgUrl,    setImgUrl]    = useState<string>();
+  const [imgSize,   setImgSize]   = useState<{ w: number; h: number }>();
+  const [workflow,  setWorkflow]  = useState<Workflow>();
 
   /* ----------------------------------------------------------------
-     3) fetch project once
+     2. fetch project once
   ---------------------------------------------------------------- */
   useEffect(() => {
-    if (!id) return;                // params yet to be resolved
     (async () => {
       const { data, error } = await supabase
-        .from('projects')
-        .select('image_url')
-        .eq('id', id)
+        .from("projects")
+        .select("image_url")
+        .eq("id", id)
         .single();
 
-      if (error || !data) return notFound();
-      setUrl(data.image_url as string);
+      if (error || !data?.image_url) return router.push("/dashboard");
+      setImgUrl(data.image_url);
     })();
-  }, [id, supabase]);
+  }, [id, supabase, router]);
 
-  if (!url) return null;            // simple loading fallback
+  if (!imgUrl) return null; // still loading
 
   /* ----------------------------------------------------------------
-     4) view
+     3. render
   ---------------------------------------------------------------- */
   return (
     <main className="min-h-screen bg-gray-950 text-gray-100 p-6 space-y-6">
-      <p className="text-sm text-gray-400">
-        <b>Tip:</b> draw with the green brush to mark the area to edit.
-      </p>
+      {/* ── A. choose workflow (once) ─────────────────────────────── */}
+      {!workflow && (
+        <div className="flex flex-wrap gap-4">
+          {[
+            ["edit",            "Image Edit"],
+            ["edit_model",      "Image Edit + Model"],
+            ["edit_model_pose", "Edit + Model + Pose"],
+            ["studio_retouch",  "Studio Retouch"],
+          ].map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setWorkflow(key as Workflow)}
+              className="px-5 py-3 rounded bg-blue-600 hover:brightness-110"
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {/* base image + drawing layer */}
-      <div className="relative inline-block max-w-[900px] w-full">
-        <img
-          src={url}
-          alt="project"
-          className="block w-full h-auto select-none pointer-events-none rounded-lg"
-          onLoad={(e) => {
-            const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
-            setSize({ w, h });
-          }}
-        />
+      {/* ── B. canvas UI ─────────────────────────────────────────── */}
+      {workflow && (
+        <>
+          {/* tips bar */}
+          <p className="bg-gray-900/60 p-3 rounded text-sm">
+            <b>Tip:</b> draw with the green brush to mark the area to edit.
+          </p>
 
-        {size && (
-          <FabricCanvas
-          imageUrl={url}
-          maskColor="rgba(0,255,0,0.5)"
-          className="absolute inset-0 z-10 pointer-events-auto rounded-lg"
-        />
-        )}
-      </div>
+          {/* image + drawing layer */}
+          <div className="relative w-full max-w-[900px] mx-auto">
+            {/* 1️⃣ the base image */}
+            <img
+              src={imgUrl}
+              alt="project"
+              className="block w-full h-auto max-h-[70vh] rounded-lg select-none pointer-events-none"
+              onLoad={(e) => {
+                const { naturalWidth, naturalHeight } = e.currentTarget;
+                /* scale factor to fit our max-dimensions */
+                const r = Math.min(
+                  900 / naturalWidth,
+                  (window.innerHeight * 0.70) / naturalHeight,
+                  1
+                );
+                setImgSize({ w: naturalWidth * r, h: naturalHeight * r });
+              }}
+            />
 
-      {/* back button */}
-      <button
-        onClick={() => router.push('/dashboard')}
-        className="px-6 py-3 rounded bg-gray-700"
-      >
-        back
-      </button>
+            {/* 2️⃣ the free-drawing canvas */}
+            {imgSize && (
+              <FabricCanvas
+                width={imgSize.w}
+                height={imgSize.h}
+                className="absolute inset-0 z-10 pointer-events-auto rounded-lg"
+              />
+            )}
+          </div>
+
+          {/* prompt box */}
+          <textarea
+            defaultValue={
+              workflow === "edit" || workflow === "studio_retouch"
+                ? "1+6+7+8"
+                : "6+7+8"
+            }
+            rows={3}
+            className="w-full bg-gray-800/60 p-3 rounded outline-none"
+          />
+
+          {/* footer */}
+          <div className="flex gap-4">
+            <button className="flex-1 bg-emerald-600 py-3 rounded">
+              Apply&nbsp;edit
+            </button>
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="px-5 py-3 bg-gray-700 rounded"
+            >
+              Back
+            </button>
+          </div>
+        </>
+      )}
     </main>
   );
 }

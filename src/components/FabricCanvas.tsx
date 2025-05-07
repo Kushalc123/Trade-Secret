@@ -1,50 +1,54 @@
-/* ---------------------------------------------------------
-   Lightweight Fabric 6 drawing layer
-----------------------------------------------------------*/
+/* ------------------------------------------------------------------
+   FabricCanvas – plain drawing layer (no image)                  v1
+-------------------------------------------------------------------*/
 "use client";
 
 import { useEffect, useRef } from "react";
-import * as fabric from "fabric";   // ← full namespace
-import clsx from "clsx";   
+import type { FabricCanvas } from "fabric";
+import { fabric } from "fabric";
 
-export interface FabricCanvasProps {
-  imageUrl: string;
-  maskColor?: string;
+interface Props {
+  width:  number;
+  height: number;
   className?: string;
+  maskColor?: string;   // any CSS color – default = 50 % green
+  brushSize?: number;   // px
 }
 
 export default function FabricCanvas({
-  imageUrl,
-  maskColor = "rgba(0,255,0,0.5)",
-  className,
-}: FabricCanvasProps) {
+  width,
+  height,
+  className    = "",
+  maskColor    = "rgba(0,255,0,0.5)",
+  brushSize    = 40,
+}: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
 
-  /* build once */
+  /* build once on mount */
   useEffect(() => {
-    if (!ref.current || !imageUrl) return;
-    
-    // Create a new fabric canvas
-    const canvas = new fabric.Canvas(ref.current, {
+    if (!ref.current) return;
+    const canvas: FabricCanvas = new fabric.Canvas(ref.current, {
+      width,
+      height,
       selection: false,
     });
 
-    // Load the image and set canvas dimensions
-    fabric.Image.fromURL(imageUrl, (img) => {
-      // Set canvas dimensions to match image
-      canvas.setWidth(img.width ?? 800);
-      canvas.setHeight(img.height ?? 600);
-      
-      // Set up brush
-      const brush = new fabric.PencilBrush(canvas);
-      brush.color = maskColor;
-      brush.width = 40; // You could make this configurable
-      canvas.freeDrawingBrush = brush;
-      canvas.isDrawingMode = true;
-    });
+    /* custom brush */
+    const brush = new fabric.PencilBrush(canvas);
+    brush.color  = maskColor;
+    brush.width  = brushSize;
+    canvas.freeDrawingBrush = brush;
+    canvas.isDrawingMode    = true;
 
     return () => canvas.dispose();
-  }, [imageUrl, maskColor]);
+  }, [width, height, maskColor, brushSize]);
 
-  return <canvas ref={ref} className={className} />;
+  return (
+    <canvas
+      ref={ref}
+      width={width}
+      height={height}
+      className={className}
+    />
+  );
 }
