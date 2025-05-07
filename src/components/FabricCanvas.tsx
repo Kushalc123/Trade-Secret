@@ -6,38 +6,45 @@
 import { useEffect, useRef } from "react";
 import * as fabric from "fabric";   // ← full namespace
 import clsx from "clsx";   
+
 export interface FabricCanvasProps {
-  width:  number;
-  height: number;
-  mask   ?: string;   // rgba() — default 50 % green
-  size   ?: number;   // brush px
+  imageUrl: string;
+  maskColor?: string;
+  className?: string;
 }
 
 export default function FabricCanvas({
-  width,
-  height,
-  mask = "rgba(0,255,0,0.5)",
-  size = 40,
+  imageUrl,
+  maskColor = "rgba(0,255,0,0.5)",
+  className,
 }: FabricCanvasProps) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   /* build once */
   useEffect(() => {
-    if (!ref.current) return;
+    if (!ref.current || !imageUrl) return;
+    
+    // Create a new fabric canvas
     const canvas = new fabric.Canvas(ref.current, {
-      width,
-      height,
       selection: false,
     });
 
-    const brush         = new fabric.PencilBrush(canvas);
-    brush.stroke        = mask;     // colour incl. alpha
-    brush.width         = size;
-    canvas.freeDrawingBrush = brush;
-    canvas.isDrawingMode    = true;
+    // Load the image and set canvas dimensions
+    fabric.Image.fromURL(imageUrl, (img) => {
+      // Set canvas dimensions to match image
+      canvas.setWidth(img.width ?? 800);
+      canvas.setHeight(img.height ?? 600);
+      
+      // Set up brush
+      const brush = new fabric.PencilBrush(canvas);
+      brush.color = maskColor;
+      brush.width = 40; // You could make this configurable
+      canvas.freeDrawingBrush = brush;
+      canvas.isDrawingMode = true;
+    });
 
     return () => canvas.dispose();
-  }, [width, height, mask, size]);
+  }, [imageUrl, maskColor]);
 
-  return <canvas ref={ref} className="block" />;
+  return <canvas ref={ref} className={className} />;
 }

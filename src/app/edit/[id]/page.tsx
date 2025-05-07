@@ -74,11 +74,10 @@ export default function Edit() {
 
         {size && (
           <FabricCanvas
-            key={url}                 /* reset brush when image changes */
-            imageUrl={url}
-            maskColor="rgba(0,255,0,0.5)"
-            className="absolute inset-0 rounded-lg"
-          />
+          imageUrl={url}
+          maskColor="rgba(0,255,0,0.5)"
+          className="absolute inset-0 z-10 pointer-events-auto rounded-lg"
+        />
         )}
       </div>
 
