@@ -1,25 +1,20 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    wasm: true,
+  reactStrictMode: true,
+
+  images: {
+    // allow supabase storage URLs
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'uuqohfgyxifctdvllgtg.supabase.co',
+        port: '',               // no custom port
+        pathname: '/storage/v1/object/public/uploads/**',
+      },
+    ],
   },
-  webpack(config, { isServer }) {
-    if (!isServer) {
-      // Alias node‐only runtime to the web runtime
-      config.resolve.alias = {
-        ...(config.resolve.alias || {}),
-        'onnxruntime-node': 'onnxruntime-web',
-      };
-      // Prevent bundling of Node core modules
-      config.resolve.fallback = {
-        ...(config.resolve.fallback || {}),
-        fs: false,
-        path: false,
-        os: false,
-      };
-    }
-    return config;
-  },
+
+  // ...any other config (webpack, env, etc.)
 };
 
 export default nextConfig;
