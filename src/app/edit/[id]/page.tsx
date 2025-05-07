@@ -5,7 +5,13 @@
 
 import { notFound, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import FabricCanvas from "@/components/FabricCanvas";
+import dynamic from 'next/dynamic';
+
+const FabricCanvas = dynamic(
+  () => import('@/components/FabricCanvas').then(m => m.default),
+  { ssr: false, loading: () => <p className="text-gray-400">loading…</p> }
+);
+//import FabricCanvas from "@/components/FabricCanvas";
 import { supabaseBrowser } from "@/lib/supabaseClient";
 
 export default function Edit() {

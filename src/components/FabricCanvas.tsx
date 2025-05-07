@@ -5,7 +5,7 @@
 
 import { useEffect, useRef } from "react";
 import * as fabric from "fabric";   // ← full namespace
-
+import clsx from "clsx";   
 export interface FabricCanvasProps {
   width:  number;
   height: number;
