@@ -1,31 +1,30 @@
-/* ------------------------------------------------------------------
-   src/components/FabricCanvas.tsx
--------------------------------------------------------------------*/
+/* transparent Fabric overlay */
 "use client";
 
 import { useEffect, useRef } from "react";
 import type { FabricCanvas } from "fabric/fabric-impl";
-import * as fabric from "fabric";          // ☑ default export provides Canvas
+import * as fabric from "fabric";
 
 interface Props {
-  width:  number;
+  width: number;
   height: number;
-  className?:  string;
-  maskColor?:  string;
-  brushSize?:  number;
+  maskColor?: string;
+  brushSize?: number;
+  className?: string;
 }
 
 export default function FabricCanvas({
   width,
   height,
-  className = "",
   maskColor = "rgba(0,255,0,0.5)",
   brushSize = 40,
+  className = "",
 }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     if (!ref.current) return;
+
     const canvas: FabricCanvas = new fabric.Canvas(ref.current, {
       width,
       height,
@@ -33,20 +32,22 @@ export default function FabricCanvas({
     });
 
     const brush = new fabric.PencilBrush(canvas);
-    brush.color  = maskColor;
-    brush.width  = brushSize;
+    brush.color = maskColor;
+    brush.width = brushSize;
+    brush.decimate = 8;
     canvas.freeDrawingBrush = brush;
-    canvas.isDrawingMode    = true;
+    canvas.isDrawingMode = true;
 
     return () => canvas.dispose();
   }, [width, height, maskColor, brushSize]);
 
+  /* 👇 no more extra spacing – absolute & inset-0 */
   return (
     <canvas
       ref={ref}
       width={width}
       height={height}
-      className={`outline outline-1 outline-gray-700 shadow-lg ${className}`}
+      className={`absolute inset-0 ${className}`}
     />
   );
 }
