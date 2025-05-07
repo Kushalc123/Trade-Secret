@@ -1,33 +1,47 @@
-/* ---------------------------------------------------------
-   VERY small demo editor
-----------------------------------------------------------*/
-"use client";
+/* ------------------------------------------------------------------
+   src/app/edit/[id]/page.tsx  –  very-small demo editor (fixed)
+-------------------------------------------------------------------*/
+'use client';
 
-import { notFound, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import {
+  notFound,
+  useRouter,
+  useParams,          // ⬅️ grab route params here
+} from 'next/navigation';
+import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
+import { supabaseBrowser } from '@/lib/supabaseClient';
 
+/* lazy-load the Fabric wrapper only on the client */
 const FabricCanvas = dynamic(
-  () => import('@/components/FabricCanvas').then(m => m.default),
+  () => import('@/components/FabricCanvas').then((m) => m.default),
   { ssr: false, loading: () => <p className="text-gray-400">loading…</p> }
 );
-//import FabricCanvas from "@/components/FabricCanvas";
-import { supabaseBrowser } from "@/lib/supabaseClient";
 
 export default function Edit() {
-  const { push }  = useRouter();
-  const supabase  = supabaseBrowser();
-  const id        = useRouter().params.id as string;
+  /* ----------------------------------------------------------------
+     1) routing helpers
+  ---------------------------------------------------------------- */
+  const router          = useRouter();
+  const { id }          = useParams<{ id: string }>(); // ✅
+  const supabase        = supabaseBrowser();
 
-  const [url, setUrl] = useState<string>();
+  /* ----------------------------------------------------------------
+     2) state
+  ---------------------------------------------------------------- */
+  const [url, setUrl]   = useState<string>();
+  const [size, setSize] = useState<{ w: number; h: number }>();
 
-  /* fetch the project once */
+  /* ----------------------------------------------------------------
+     3) fetch project once
+  ---------------------------------------------------------------- */
   useEffect(() => {
+    if (!id) return;                // params yet to be resolved
     (async () => {
       const { data, error } = await supabase
-        .from("projects")
-        .select("image_url")
-        .eq("id", id)
+        .from('projects')
+        .select('image_url')
+        .eq('id', id)
         .single();
 
       if (error || !data) return notFound();
@@ -35,52 +49,46 @@ export default function Edit() {
     })();
   }, [id, supabase]);
 
-  if (!url) return null;
+  if (!url) return null;            // simple loading fallback
 
+  /* ----------------------------------------------------------------
+     4) view
+  ---------------------------------------------------------------- */
   return (
-    <main className="p-6 space-y-4 text-gray-100 bg-gray-950 min-h-screen">
-      <p className="bg-gray-900/60 rounded p-3 text-sm">
+    <main className="min-h-screen bg-gray-950 text-gray-100 p-6 space-y-6">
+      <p className="text-sm text-gray-400">
         <b>Tip:</b> draw with the green brush to mark the area to edit.
       </p>
 
-      {/* base image */}
-      <img
-        src={url}
-        alt=""
-        className="mx-auto block max-w-[900px] w-full h-auto rounded-lg"
-        onLoad={e => {
-          const w = e.currentTarget.naturalWidth;
-          const h = e.currentTarget.naturalHeight;
-          /* render drawing layer the same size */
-          setSize({ w, h });
-        }}
-      />
+      {/* base image + drawing layer */}
+      <div className="relative inline-block max-w-[900px] w-full">
+        <img
+          src={url}
+          alt="project"
+          className="block w-full h-auto select-none pointer-events-none rounded-lg"
+          onLoad={(e) => {
+            const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
+            setSize({ w, h });
+          }}
+        />
 
-      {/* drawing layer */}
-      {size && (
-        <div className="relative mx-auto max-w-[900px]">
+        {size && (
           <FabricCanvas
-            width={size.w}
-            height={size.h}
-            className="absolute inset-0 pointer-events-auto"
+            key={url}                 /* reset brush when image changes */
+            imageUrl={url}
+            maskColor="rgba(0,255,0,0.5)"
+            className="absolute inset-0 rounded-lg"
           />
-        </div>
-      )}
+        )}
+      </div>
 
+      {/* back button */}
       <button
-        onClick={() => push("/dashboard")}
+        onClick={() => router.push('/dashboard')}
         className="px-6 py-3 rounded bg-gray-700"
       >
         back
       </button>
     </main>
   );
-}
-
-/* local helper state */
-function setSize(arg: { w: number; h: number }) {
-  (window as any).__size__ = arg;
-}
-function useSize() {
-  return (window as any).__size__ as { w: number; h: number } | undefined;
 }
